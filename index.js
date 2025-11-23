@@ -11,21 +11,45 @@ const pool = mysql.createPool(process.env.DATABASE_URL /* ex: mysql://user:pass@
 
 app.get('/', (req, res) => res.json({ ok: true }));
 
-// Exemplo: cadastrar usuário
-app.post('/api/register', async (req, res) => {
-  const { nome, email, senha } = req.body;
-  if (!nome || !email || !senha) return res.status(400).json({ error: 'faltam dados' });
+// LOGIN
+app.post('/api/usuarios/login', async (req, res) => {
+    const { email, senha } = req.body;
 
-  try {
-    const [result] = await pool.query(
-      'INSERT INTO usuarios (nome, email, senha) VALUES (?, ?, ?)',
-      [nome, email, senha] // hash de senha em produção!
-    );
-    res.json({ id: result.insertId });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'erro no banco' });
-  }
+    if (!email || !senha)
+        return res.status(400).json({ error: 'faltam dados' });
+
+    try {
+        const [rows] = await pool.query(
+            'SELECT id, nome, email FROM usuarios WHERE email = ? AND senha = ?',
+            [email, senha]
+        );
+
+        if (rows.length === 0)
+            return res.status(401).json({ error: 'credenciais inválidas' });
+
+        res.json(rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'erro no banco' });
+    }
+});
+
+// BUSCAR USUÁRIO
+app.get('/api/usuarios/:id', async (req, res) => {
+    try {
+        const [rows] = await pool.query(
+            'SELECT id, nome, email FROM usuarios WHERE id = ?',
+            [req.params.id]
+        );
+
+        if (rows.length === 0)
+            return res.status(404).json({ error: 'usuário não encontrado' });
+
+        res.json(rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'erro no banco' });
+    }
 });
 
 const PORT = process.env.PORT || 3000;
