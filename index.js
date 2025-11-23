@@ -7,7 +7,12 @@ const app = express();
 app.use(cors()); // configurar origem se quiser: cors({ origin: 'https://meu-site.vercel.app' })
 app.use(express.json());
 
-const pool = mysql.createPool(process.env.DATABASE_URL /* ex: mysql://user:pass@host:port/db */);
+const pool = mysql.createPool({
+  uri: process.env.DATABASE_URL,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+});
 
 app.get('/', (req, res) => res.json({ ok: true }));
 
